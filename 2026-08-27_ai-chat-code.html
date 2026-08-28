@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Свой двор</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,300;7..72,400;7..72,500&family=Inter:wght@400;500;600&display=swap');
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { height: 100%; overflow: hidden; background: #1a1a1a; font-family: 'Literata', serif; }
+
+        #phone-frame {
+            width: 390px; height: 844px;
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            border-radius: 40px; border: 8px solid #2a2a2a;
+            box-shadow: 0 0 0 2px #111, 0 20px 60px rgba(0,0,0,0.5);
+            overflow: hidden; background: #0a0908;
+        }
+        @media (max-width: 500px) {
+            #phone-frame { width:100%;height:100%;position:fixed;top:0;left:0;transform:none;border-radius:0;border:none;box-shadow:none; }
+        }
+
+        #game {
+            width: 100%; height: 100%;
+            position: relative;
+            color: #e8e0d4;
+            overflow: hidden;
+            background-size: cover;
+            background-position: center bottom;
+            background-repeat: no-repeat;
+            background-color: #080706;
+        }
+
+        /* TOP INFO BAR */
+#info-bar {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 36px 16px 10px;
+    background: #1e1810;
+    border-bottom: 1px solid #3d3425;
+}
+        #day-info { font-family:'Inter',sans-serif;font-size:10px;font-weight:500;color:#5a5245;letter-spacing:0.3px; }
+        #info-right { display:flex;align-items:center;gap:10px; }
+        #resources { display:flex;align-items:center;gap:8px;font-family:'Inter',sans-serif;font-size:10px;color:#5a5245; }
+        #energy-dots { display:flex;gap:3px;align-items:center; }
+        .energy-dot { width:7px;height:7px;border-radius:50%;background:#c8a84a;transition:background 0.3s; }
+        .energy-dot.empty { background:#2a2520; }
+
+        .menu-btn { width:26px;height:26px;background:none;border:1px solid #252017;border-radius:4px;color:#4a4238;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;position:relative; }
+        .menu-btn:active { background:#1a1714;color:#a89880; }
+        .menu-btn.has-notif::after { content:'';position:absolute;top:2px;right:2px;width:6px;height:6px;background:#c84a4a;border-radius:50%; }
+
+        /* BOTTOM PANEL */
+#bottom-section {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+z-index: 3;
+}
+#bottom-section::before {
+    display: none;
+}
+#content-area {
+    background: #1e1810;
+    border-top: 1px solid #3d3425;
+    padding: 14px 16px 18px;
+}
+#characters {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    pointer-events: none;
+    z-index: 2;
+}
+#characters img {
+    position: absolute;
+    bottom: 77px;
+    left: 50%;
+    transform: translateX(-50%);
+    height: 55%;
+    object-fit: contain;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+}
+#characters img.visible {
+    opacity: 1;
+}
+#characters img.char-left {
+    left: 25%;
+}
+#characters img.char-right {
+    left: 75%;
+}
+
+
+
+        #text-row { display:flex;align-items:center;gap:14px; }
+        #current-text { flex:1;font-size:15px;line-height:1.7;color:#d4cbb8;opacity:0;transform:translateY(3px);transition:opacity 0.35s ease,transform 0.35s ease; }
+        #current-text.visible { opacity:1;transform:translateY(0); }
+        #current-text.dialogue { color:#c8b888;padding-left:12px;border-left:2px solid #3d3525;font-style:italic; }
+        #current-text.system { color:#6a6050;font-size:12px;font-family:'Inter',sans-serif;font-style:normal; }
+
+        #continue-btn { flex-shrink:0;width:44px;height:44px;background:#161310;border:1px solid #2a2520;color:#5a5245;font-size:16px;cursor:pointer;border-radius:50%;display:none;align-items:center;justify-content:center; }
+        #continue-btn:active { background:#2a2520;color:#e8e0d4; }
+        #continue-btn.visible { display:flex; }
+
+        #choices-container { display:none;flex-direction:column;gap:6px; }
+        #choices-container.visible { display:flex; }
+        .choice-btn { background:#141110;border:1px solid #252017;color:#d4cbb8;padding:12px 14px;font-family:'Literata',serif;font-size:14px;text-align:left;cursor:pointer;border-radius:6px; }
+        .choice-btn:active { background:#1e1a15;border-color:#3d3525; }
+
+        /* ACTION CAROUSEL */
+        #action-menu { display:none;flex-direction:column; }
+        #action-menu.visible { display:flex; }
+
+        #carousel {
+            display: flex;
+            align-items: center;
+            gap: 0;
+        }
+        .carousel-arrow {
+            width: 36px; height: 36px;
+            background: none;
+            border: 1px solid #252017;
+            border-radius: 50%;
+            color: #5a5245;
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .carousel-arrow:active { background: #1a1714; color: #e8e0d4; }
+
+        #carousel-card {
+            flex: 1;
+            background: #141110;
+            border: 1px solid #1e1b17;
+            border-radius: 8px;
+            padding: 14px 16px;
+            margin: 0 10px;
+            text-align: center;
+            min-height: 80px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: opacity 0.2s ease, transform 0.2s ease;
+        }
+        #carousel-card:active { background: #1e1a15; border-color: #3d3525; }
+        #carousel-card.disabled { opacity: 0.3; pointer-events: none; }
+        #carousel-card.switching {
+            opacity: 0;
+            transform: scale(0.95);
+        }
+
+        #carousel-icon { font-size: 22px; margin-bottom: 6px; }
+        #carousel-name { font-family:'Inter',sans-serif; font-size: 14px; font-weight: 500; color: #d4cbb8; margin-bottom: 3px; }
+        #carousel-desc { font-family:'Inter',sans-serif; font-size: 11px; color: #5a5245; margin-bottom: 6px; }
+        #carousel-cost { font-family:'Inter',sans-serif; font-size: 11px; color: #c8a84a; }
+
+        #carousel-dots {
+            display: flex;
+            justify-content: center;
+            gap: 5px;
+            margin-top: 10px;
+        }
+        .carousel-dot {
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: #2a2520;
+            transition: background 0.2s;
+        }
+        .carousel-dot.active { background: #5a5245; }
+
+        @keyframes fadeIn { from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);} }
+
+        /* Phone */
+        #phone-overlay { display:none;position:absolute;top:0;left:0;right:0;bottom:0;background:#111118;z-index:100;flex-direction:column;animation:phoneSlideUp 0.3s ease; }
+        #phone-overlay.active { display:flex; }
+        @keyframes phoneSlideUp { from{transform:translateY(100%);}to{transform:translateY(0);} }
+        .phone-header { display:flex;align-items:center;justify-content:space-between;padding:40px 16px 12px;background:#16161e;border-bottom:1px solid #22222e;flex-shrink:0; }
+        .phone-header h3 { font-family:'Inter',sans-serif;font-size:14px;font-weight:600;color:#e0e0e8; }
+        .phone-back { background:none;border:none;color:#7a7a9a;font-size:22px;cursor:pointer;padding:4px 8px; }
+        .phone-close { background:none;border:none;color:#7a7a9a;font-size:18px;cursor:pointer;padding:4px 8px;font-family:'Inter',sans-serif; }
+
+        #phone-home { flex:1;padding:16px;overflow-y:auto; }
+        .app-grid { display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding:20px 0; }
+        .app-icon { display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer; }
+        .app-icon-img { width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:22px;position:relative; }
+        .app-icon-img.viber { background:#7360b2; }
+        .app-icon-img.notes { background:#c8a84a; }
+        .app-icon-img.avito { background:#00aaff; }
+        .app-icon-img.zhes { background:#4a8a4a; }
+        .app-icon-label { font-family:'Inter',sans-serif;font-size:10px;color:#8a8aa0; }
+        .app-badge { position:absolute;top:-4px;right:-4px;background:#c84a4a;color:white;font-size:9px;font-family:'Inter',sans-serif;font-weight:600;min-width:16px;height:16px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0 4px; }
+
+        .phone-screen { display:none;flex-direction:column;flex:1;overflow:hidden; }
+        .phone-screen.active { display:flex; }
+
+        #viber-chatlist { flex:1;overflow-y:auto;padding:8px 0; }
+        .chat-item { display:flex;align-items:center;gap:12px;padding:12px 16px;cursor:pointer;border-bottom:1px solid #1e1e2a; }
+        .chat-item:active { background:#1a1a26; }
+        .chat-avatar { width:42px;height:42px;border-radius:50%;background:#2a2a3a;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0; }
+        .chat-info { flex:1;min-width:0; }
+        .chat-name { font-family:'Inter',sans-serif;font-size:13px;font-weight:500;color:#e0e0e8; }
+        .chat-last { font-family:'Inter',sans-serif;font-size:11px;color:#6a6a7a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+        .chat-meta { text-align:right;flex-shrink:0; }
+        .chat-time { font-family:'Inter',sans-serif;font-size:10px;color:#6a6a7a; }
+        .chat-unread { background:#7360b2;color:white;font-size:9px;font-family:'Inter',sans-serif;min-width:18px;height:18px;border-radius:9px;display:flex;align-items:center;justify-content:center;margin-top:4px;margin-left:auto; }
+
+        #chat-messages { flex:1;overflow-y:auto;padding:12px 16px;display:flex;flex-direction:column;gap:6px; }
+        .msg { max-width:80%;padding:8px 12px;border-radius:12px;font-family:'Inter',sans-serif;font-size:13px;line-height:1.4; }
+        .msg.incoming { background:#2a2a3a;color:#ccc;align-self:flex-start;border-bottom-left-radius:4px; }
+        .msg.outgoing { background:#7360b2;color:white;align-self:flex-end;border-bottom-right-radius:4px; }
+        .msg .msg-sender { font-size:10px;font-weight:600;color:#9a8ad4;margin-bottom:2px; }
+        #chat-input { padding:10px 16px;border-top:1px solid #22222e;display:flex;flex-direction:column;gap:5px; }
+        .chat-reply-btn { padding:10px 14px;background:#2a2a3a;border:none;color:#ccc;font-family:'Inter',sans-serif;font-size:13px;border-radius:8px;cursor:pointer;text-align:left; }
+        .chat-reply-btn:active { background:#3a3a4a; }
+
+        #avito-list { flex:1;overflow-y:auto;padding:8px 16px; }
+        .avito-item { display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #1e1e2a; }
+        .avito-img { width:48px;height:48px;border-radius:8px;background:#2a2a3a;display:flex;align-items:center;justify-content:center;font-size:20px; }
+        .avito-info { flex:1; }
+        .avito-name { font-family:'Inter',sans-serif;font-size:13px;color:#e0e0e8;font-weight:500; }
+        .avito-desc { font-family:'Inter',sans-serif;font-size:11px;color:#6a6a7a;margin-top:2px; }
+        .avito-buy { padding:8px 14px;background:#00aaff;border:none;color:white;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;border-radius:6px;cursor:pointer; }
+        .avito-buy:active { background:#0088cc; }
+        .avito-buy.bought { background:#2a3a2a;color:#6a8a6a;pointer-events:none; }
+
+        #zhes-screen { padding:16px; }
+        .zhes-status { font-family:'Inter',sans-serif;font-size:12px;color:#6a6a7a;text-align:center;padding:20px 0; }
+        .zhes-call-btn { width:100%;padding:14px;background:#4a8a4a;border:none;color:white;font-family:'Inter',sans-serif;font-size:14px;font-weight:600;border-radius:8px;cursor:pointer;margin-top:12px; }
+        .zhes-call-btn:active { background:#3a7a3a; }
+        .zhes-call-btn.disabled { background:#2a3a2a;color:#5a6a5a;pointer-events:none; }
+        .zhes-log { margin-top:16px;border-top:1px solid #22222e;padding-top:12px; }
+        .zhes-log-item { font-family:'Inter',sans-serif;font-size:11px;color:#6a6a7a;padding:6px 0; }
+
+        #notes-list { flex:1;overflow-y:auto;padding:12px 16px; }
+        .note-item { padding:10px 0;border-bottom:1px solid #1e1e2a;font-family:'Inter',sans-serif;font-size:13px;color:#b0b0c0; }
+        .note-item .note-cat { font-size:10px;color:#6a6a7a;margin-bottom:2px;text-transform:uppercase; }
+
+        #panel-overlay { display:none;position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(8,6,5,0.97);z-index:50;padding:48px 16px 16px;overflow-y:auto; }
+        #panel-overlay.active { display:block; }
+        #panel-content h2 { font-family:'Inter',sans-serif;font-size:11px;font-weight:600;color:#7a7060;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:14px; }
+        .panel-item { padding:11px 0;border-bottom:1px solid #1a1714;font-size:13px;color:#b8a888;line-height:1.5; }
+        .panel-item .label { color:#4a4238;font-size:10px;font-family:'Inter',sans-serif;margin-bottom:2px; }
+        .close-panel { position:absolute;top:14px;right:14px;background:none;border:none;color:#5a5245;font-size:22px;cursor:pointer; }
+
+        #day-summary { display:none;position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(8,6,5,0.97);z-index:80;padding:48px 16px;overflow-y:auto; }
+        #day-summary.active { display:flex;flex-direction:column;align-items:center; }
+        #summary-content { width:100%;text-align:center; }
+        #summary-content h2 { font-family:'Inter',sans-serif;font-size:10px;font-weight:600;color:#5a5245;text-transform:uppercase;letter-spacing:2px;margin-bottom:24px; }
+        #summary-content h3 { font-size:11px;color:#6a6050;font-family:'Inter',sans-serif;margin-top:18px;margin-bottom:8px;text-align:left;text-transform:uppercase; }
+        .summary-item { text-align:left;padding:9px 0;font-size:13px;color:#b8a888;border-bottom:1px solid #1a1714; }
+        #next-day-btn { margin-top:28px;padding:12px 28px;background:#161310;border:1px solid #2a2520;color:#d4cbb8;font-family:'Inter',sans-serif;font-size:13px;cursor:pointer;border-radius:6px; }
+
+        #transition { position:absolute;top:0;left:0;right:0;bottom:0;background:#0a0908;z-index:200;opacity:0;pointer-events:none;transition:opacity 0.5s ease; }
+        #transition.active { opacity:1;pointer-events:all; }
+
+        #notch { position:absolute;top:0;left:50%;transform:translateX(-50%);width:120px;height:28px;background:#0a0908;border-radius:0 0 16px 16px;z-index:300; }
+        @media (max-width:500px){#notch{display:none;}}
+    </style>
+</head>
+<body>
+
+<div id="phone-frame">
+<div id="notch"></div>
+<div id="game">
+
+<div id="characters"></div>
+
+
+    <div id="transition"></div>
+
+    <div id="info-bar">
+        <div id="day-info">День 1 · Четверг · Утро</div>
+        <div id="info-right">
+            <div id="resources">
+                <span>⚡</span><div id="energy-dots"></div>
+                <span>💰<span id="money">4 200</span></span>
+            </div>
+            <button class="menu-btn" id="phone-btn" onclick="openPhone()">📱</button>
+            <button class="menu-btn" onclick="showPanel('people')">👤</button>
+            <button class="menu-btn" onclick="showPanel('yard')">🏠</button>
+        </div>
+    </div>
+
+    <div id="bottom-section">
+        <div id="content-area">
+            <div id="text-row">
+                <div id="current-text"></div>
+                <button id="continue-btn" onclick="advance()">→</button>
+            </div>
+            <div id="choices-container"></div>
+            <div id="action-menu">
+                <div id="carousel">
+                    <button class="carousel-arrow" onclick="carouselPrev()">‹</button>
+                    <div id="carousel-card" onclick="carouselSelect()">
+                        <div id="carousel-icon"></div>
+                        <div id="carousel-name"></div>
+                        <div id="carousel-desc"></div>
+                        <div id="carousel-cost"></div>
+                    </div>
+                    <button class="carousel-arrow" onclick="carouselNext()">›</button>
+                </div>
+                <div id="carousel-dots"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PHONE -->
+    <div id="phone-overlay">
+        <div class="phone-screen active" id="phone-home-screen">
+            <div class="phone-header"><h3>Телефон</h3><button class="phone-close" onclick="closePhone()">✕</button></div>
+            <div id="phone-home">
+                <div class="app-grid">
+                    <div class="app-icon" onclick="openApp('viber')"><div class="app-icon-img viber">💬<span class="app-badge" id="viber-badge" style="display:none">0</span></div><span class="app-icon-label">Viber</span></div>
+                    <div class="app-icon" onclick="openApp('notes')"><div class="app-icon-img notes">📝</div><span class="app-icon-label">Заметки</span></div>
+                    <div class="app-icon" onclick="openApp('avito')"><div class="app-icon-img avito">🛒</div><span class="app-icon-label">Авито</span></div>
+                    <div class="app-icon" onclick="openApp('zhes')"><div class="app-icon-img zhes">📞</div><span class="app-icon-label">ЖЭС</span></div>
+                </div>
+            </div>
+        </div>
+        <div class="phone-screen" id="viber-screen"><div class="phone-header"><button class="phone-back" onclick="phoneBack()">‹</button><h3>Viber</h3><button class="phone-close" onclick="closePhone()">✕</button></div><div id="viber-chatlist"></div></div>
+        <div class="phone-screen" id="chat-screen"><div class="phone-header"><button class="phone-back" onclick="openApp('viber')">‹</button><h3 id="chat-title">Чат</h3><button class="phone-close" onclick="closePhone()">✕</button></div><div id="chat-messages"></div><div id="chat-input"></div></div>
+        <div class="phone-screen" id="notes-screen"><div class="phone-header"><button class="phone-back" onclick="phoneBack()">‹</button><h3>Заметки</h3><button class="phone-close" onclick="closePhone()">✕</button></div><div id="notes-list"></div></div>
+        <div class="phone-screen" id="avito-screen"><div class="phone-header"><button class="phone-back" onclick="phoneBack()">‹</button><h3>Авито</h3><button class="phone-close" onclick="closePhone()">✕</button></div><div id="avito-list"></div></div>
+        <div class="phone-screen" id="zhes-screen-view"><div class="phone-header"><button class="phone-back" onclick="phoneBack()">‹</button><h3>ЖЭС-48</h3><button class="phone-close" onclick="closePhone()">✕</button></div><div id="zhes-screen"></div></div>
+    </div>
+
+    <div id="panel-overlay"><button class="close-panel" onclick="closePanel()">×</button><div id="panel-content"></div></div>
+    <div id="day-summary"><div id="summary-content"></div></div>
+</div>
+</div>
+
+<script>
+function setBg(k){
+    const urls={room_day:'room_day.png',room_night:'room_night.png',yard_day:'yard_day.png',yard_night:'yard_night.png',window_view:'window_view.png',shop:'shop.png'};
+    document.getElementById('game').style.backgroundImage=`url(${urls[k]})`;
+}
+
+let state={
+    day:1,timeSlot:'morning',energy:3,maxEnergy:3,money:4200,
+    trust:{rygor:0,tamara:0,ivan:0,zhenya:0,vitold:0},
+    yard:{lavochka:'сломана',fonar:'не горит',musor:'разбросан',ploschadka:'каркас',klumba:'бурьян'},
+    flags:{},notes:[],people_met:[],inventory:[],
+    chats:{
+        dom7:{name:'Дом 7, Чырвоная',avatar:'🏠',unread:0,messages:[],replies:[],locked:true},
+        mama:{name:'Мама',avatar:'❤️',unread:1,messages:[{sender:'Мама',text:'Даехаў? Як кватэра?',time:'09:12'}],replies:[{text:'Усё добра, мам.',response:{sender:'Мама',text:'Добра! Еш нармальна 😘',time:'09:15'},nextReplies:[]},{text:'Сумна тут.',response:{sender:'Мама',text:'Прывыкнеш. Не сядзі адзін.',time:'09:15'},nextReplies:[]}],locked:true},
+        rygor:{name:'Рыгор',avatar:'🧹',unread:0,messages:[],replies:[],locked:true}
+    },
+    avito:[
+        {id:'bolt',name:'Болты + гайки',desc:'Набор M10',price:5,icon:'🔩',bought:false},
+        {id:'lamp',name:'Лампа LED',desc:'E27, тёплый свет',price:8,icon:'💡',bought:false},
+        {id:'paint',name:'Краска фасадная',desc:'Белая, 3л',price:25,icon:'🎨',bought:false},
+        {id:'wrench',name:'Разводной ключ',desc:'Б/у, рабочий',price:12,icon:'🔧',bought:false},
+        {id:'seeds',name:'Семена цветов',desc:'Бархатцы, астры',price:4,icon:'🌱',bought:false},
+    ],
+    zhes:{called:0,status:'не обращались',log:[]}
+};
+
+function updateUI(){
+    document.getElementById('money').textContent=state.money.toLocaleString('ru');
+    updateEnergyDots();updatePhoneBadge();
+}
+function updateEnergyDots(){
+    const c=document.getElementById('energy-dots');c.innerHTML='';
+    for(let i=0;i<state.maxEnergy;i++){const d=document.createElement('div');d.className='energy-dot'+(i>=state.energy?' empty':'');c.appendChild(d);}
+}
+function updatePhoneBadge(){
+    let total=0;Object.values(state.chats).forEach(c=>{if(!c.locked)total+=c.unread;});
+    const badge=document.getElementById('viber-badge'),btn=document.getElementById('phone-btn');
+    if(total>0){badge.style.display='flex';badge.textContent=total;btn.classList.add('has-notif');}
+    else{badge.style.display='none';btn.classList.remove('has-notif');}
+}
+
+let currentSteps=[],stepIndex=0,afterSceneCallback=null;
+
+function runScene(scene,onComplete){
+    currentSteps=scene;stepIndex=0;afterSceneCallback=onComplete||null;
+    hideAll();document.getElementById('text-row').style.display='flex';showStep();
+}
+function showStep(){
+    if(stepIndex>=currentSteps.length){if(afterSceneCallback)afterSceneCallback();return;}
+    const step=currentSteps[stepIndex];
+    if(step.type==='text'){showText(step.text,step.className||'');showBtn();}
+    else if(step.type==='bg'){setBg(step.bg);stepIndex++;showStep();}
+    else if(step.type==='transition'){doTransition(()=>{stepIndex++;showStep();});}
+    else if(step.type==='choices'){document.getElementById('text-row').style.display='none';showChoices(step.choices);}
+    else if(step.type==='info'){document.getElementById('day-info').textContent=step.text;stepIndex++;showStep();}
+    else if(step.type==='action'){step.fn();stepIndex++;showStep();}
+    else if(step.type==='hub'){hideAll();showActionHub();}
+    else if(step.type==='summary'){hideBtn();hideText();showDaySummary();}
+}
+function advance(){stepIndex++;showStep();}
+
+function showText(text,cls){const el=document.getElementById('current-text');el.classList.remove('visible','dialogue','system');el.textContent='';setTimeout(()=>{el.textContent=text;if(cls)el.classList.add(cls);el.classList.add('visible');},40);}
+function hideText(){document.getElementById('current-text').classList.remove('visible');document.getElementById('current-text').textContent='';}
+function showBtn(){document.getElementById('continue-btn').classList.add('visible');}
+function hideBtn(){document.getElementById('continue-btn').classList.remove('visible');}
+function hideAll(){hideBtn();hideText();document.getElementById('choices-container').classList.remove('visible');document.getElementById('choices-container').innerHTML='';document.getElementById('action-menu').classList.remove('visible');document.getElementById('text-row').style.display='flex';}
+
+function showChoices(choices){
+    const c=document.getElementById('choices-container');c.innerHTML='';c.classList.add('visible');
+    document.getElementById('text-row').style.display='none';
+    choices.forEach((ch,i)=>{const btn=document.createElement('button');btn.className='choice-btn';btn.innerHTML=ch.text;btn.style.opacity='0';btn.style.animation=`fadeIn 0.3s ease ${i*0.06}s forwards`;btn.onclick=()=>{c.classList.remove('visible');c.innerHTML='';document.getElementById('text-row').style.display='flex';ch.action();};c.appendChild(btn);});
+}
+function doTransition(cb){const t=document.getElementById('transition');t.classList.add('active');setTimeout(()=>{clearChars(); cb();setTimeout(()=>t.classList.remove('active'),80);},500);}
+
+// ===== CAROUSEL HUB =====
+let hubActions=[];
+let carouselIndex=0;
+
+function showActionHub(){
+    document.getElementById('text-row').style.display='none';
+    document.getElementById('choices-container').classList.remove('visible');
+    const menu=document.getElementById('action-menu');
+    menu.classList.add('visible');
+    hubActions=getAvailableActions();
+    carouselIndex=0;
+    renderCarousel();
+}
+
+function renderCarousel(){
+    const card=document.getElementById('carousel-card');
+    const a=hubActions[carouselIndex];
+    if(!a)return;
+
+    document.getElementById('carousel-icon').textContent=a.icon;
+    document.getElementById('carousel-name').textContent=a.name;
+    document.getElementById('carousel-desc').textContent=a.desc;
+    document.getElementById('carousel-cost').textContent='⚡ '+a.cost;
+
+    if(a.cost>state.energy) card.classList.add('disabled');
+    else card.classList.remove('disabled');
+
+    // dots
+    const dots=document.getElementById('carousel-dots');dots.innerHTML='';
+    hubActions.forEach((_,i)=>{const d=document.createElement('div');d.className='carousel-dot'+(i===carouselIndex?' active':'');dots.appendChild(d);});
+}
+
+function carouselNext(){
+    const card=document.getElementById('carousel-card');
+    card.classList.add('switching');
+    setTimeout(()=>{
+        carouselIndex=(carouselIndex+1)%hubActions.length;
+        renderCarousel();
+        card.classList.remove('switching');
+    },150);
+}
+function carouselPrev(){
+    const card=document.getElementById('carousel-card');
+    card.classList.add('switching');
+    setTimeout(()=>{
+        carouselIndex=(carouselIndex-1+hubActions.length)%hubActions.length;
+        renderCarousel();
+        card.classList.remove('switching');
+    },150);
+}
+function carouselSelect(){
+    const a=hubActions[carouselIndex];
+    if(!a||a.cost>state.energy)return;
+    state.energy-=a.cost;updateUI();
+    document.getElementById('action-menu').classList.remove('visible');
+    a.action();
+}
+
+function getAvailableActions(){
+    const a=[];
+    if(state.timeSlot==='morning'||state.timeSlot==='day'){
+        if(!state.flags.explored_yard) a.push({icon:'🚶',name:'Выйти во двор',desc:'Осмотреться',cost:1,action:()=>runScene(scenes.explore_yard,()=>{state.flags.explored_yard=true;returnToHub();})});
+        a.push({icon:'🏪',name:'Сходить в ларёк',desc:'Продукты, новости',cost:1,action:()=>runScene(scenes.go_shop,returnToHub)});
+        if(state.people_met.find(p=>p.id==='rygor')) a.push({icon:'💬',name:'Рыгор',desc:'Дворник',cost:1,action:()=>runScene(scenes.talk_rygor,returnToHub)});
+        if(state.people_met.find(p=>p.id==='tamara')) a.push({icon:'💬',name:'Тамара Сцяпанаўна',desc:'Лавочка',cost:1,action:()=>runScene(scenes.talk_tamara,returnToHub)});
+        if(hasItems(['bolt','wrench'])&&state.yard.lavochka==='сломана') a.push({icon:'🔧',name:'Починить лавочку',desc:'Есть болты и ключ',cost:2,action:()=>runScene(scenes.fix_bench,returnToHub)});
+        if(hasItems(['lamp'])&&state.yard.fonar==='не горит') a.push({icon:'💡',name:'Поставить лампу',desc:'В фонарь',cost:1,action:()=>runScene(scenes.fix_lamp,returnToHub)});
+        if(state.yard.musor==='разбросан') a.push({icon:'🧹',name:'Убрать мусор',desc:'У контейнерной',cost:1,action:()=>runScene(scenes.clean_trash,returnToHub)});
+        if(hasItems(['seeds'])&&state.yard.klumba==='бурьян') a.push({icon:'🌱',name:'Посадить цветы',desc:'На клумбе',cost:1,action:()=>runScene(scenes.plant_flowers,returnToHub)});
+    }
+    return a;
+}
+
+function hasItems(ids){return ids.every(id=>state.avito.find(a=>a.id===id&&a.bought));}
+function returnToHub(){if(state.energy<=0)advanceTime();else showActionHub();}
+
+function advanceTime(){
+    if(state.timeSlot==='morning'){state.timeSlot='day';document.getElementById('day-info').textContent=`День ${state.day} · Четверг · День`;showActionHub();}
+    else if(state.timeSlot==='day'){state.timeSlot='evening';document.getElementById('day-info').textContent=`День ${state.day} · Четверг · Вечер`;runScene(scenes.evening_event);}
+    else if(state.timeSlot==='evening'){state.timeSlot='night';runScene(scenes.night_end);}
+}
+
+// ===== PHONE =====
+function openPhone(){document.getElementById('phone-overlay').classList.add('active');showPhoneScreen('phone-home-screen');}
+function closePhone(){document.getElementById('phone-overlay').classList.remove('active');}
+function phoneBack(){showPhoneScreen('phone-home-screen');}
+function showPhoneScreen(id){document.querySelectorAll('.phone-screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');}
+
+function openApp(app){
+    if(app==='viber')renderViber();
+    else if(app==='notes')renderNotes();
+    else if(app==='avito')renderAvito();
+    else if(app==='zhes')renderZhes();
+}
+
+function renderViber(){
+    showPhoneScreen('viber-screen');
+    const list=document.getElementById('viber-chatlist');list.innerHTML='';
+    Object.entries(state.chats).forEach(([id,chat])=>{
+        if(chat.locked)return;
+        const last=chat.messages.length?chat.messages[chat.messages.length-1]:null;
+        const div=document.createElement('div');div.className='chat-item';
+        div.innerHTML=`<div class="chat-avatar">${chat.avatar}</div><div class="chat-info"><div class="chat-name">${chat.name}</div><div class="chat-last">${last?last.text:''}</div></div><div class="chat-meta"><div class="chat-time">${last?last.time:''}</div>${chat.unread?`<div class="chat-unread">${chat.unread}</div>`:''}</div>`;
+        div.onclick=()=>openChat(id);list.appendChild(div);
+    });
+}
+
+function openChat(chatId){
+    showPhoneScreen('chat-screen');
+    const chat=state.chats[chatId];chat.unread=0;updatePhoneBadge();
+    document.getElementById('chat-title').textContent=chat.name;
+    const mc=document.getElementById('chat-messages');mc.innerHTML='';
+    chat.messages.forEach(m=>{const div=document.createElement('div');div.className='msg '+(m.sender==='Вы'?'outgoing':'incoming');div.innerHTML=(m.sender&&m.sender!=='Вы'?`<div class="msg-sender">${m.sender}</div>`:'')+m.text;mc.appendChild(div);});
+    mc.scrollTop=mc.scrollHeight;
+    const ic=document.getElementById('chat-input');ic.innerHTML='';
+    if(chat.replies&&chat.replies.length){
+        chat.replies.forEach(r=>{const btn=document.createElement('button');btn.className='chat-reply-btn';btn.textContent=r.text;btn.onclick=()=>{chat.messages.push({sender:'Вы',text:r.text,time:getCurrentTime()});if(r.effect)r.effect();if(r.response){setTimeout(()=>{chat.messages.push(r.response);openChat(chatId);},400);}chat.replies=r.nextReplies||[];openChat(chatId);};ic.appendChild(btn);});
+    }
+}
+
+function getCurrentTime(){return{morning:'09:30',day:'14:15',evening:'19:40',night:'22:10'}[state.timeSlot]||'12:00';}
+function sendChatMessage(chatId,msg){if(!state.chats[chatId])return;state.chats[chatId].messages.push(msg);state.chats[chatId].unread++;updatePhoneBadge();}
+function unlockChat(id){if(state.chats[id])state.chats[id].locked=false;}
+
+function showChar(id, src, position) {
+    let img = document.getElementById('char-' + id);
+    if (!img) {
+        img = document.createElement('img');
+        img.id = 'char-' + id;
+        document.getElementById('characters').appendChild(img);
+    }
+    img.src = src;
+    img.className = position ? 'char-' + position : '';
+    setTimeout(() => img.classList.add('visible'), 20);
+}
+
+function hideChar(id) {
+    const img = document.getElementById('char-' + id);
+    if (img) {
+        img.classList.remove('visible');
+        setTimeout(() => img.remove(), 400);
+    }
+}
+
+function clearChars() {
+    const container = document.getElementById('characters');
+    container.querySelectorAll('img').forEach(img => {
+        img.classList.remove('visible');
+    });
+    setTimeout(() => container.innerHTML = '', 400);
+}
+
+function renderNotes(){
+    showPhoneScreen('notes-screen');
+    const list=document.getElementById('notes-list');list.innerHTML='';
+    if(state.notes.length) state.notes.forEach(n=>{const d=document.createElement('div');d.className='note-item';d.innerHTML=`<div class="note-cat">📋</div>${n}`;list.appendChild(d);});
+    if(state.inventory.length) state.inventory.forEach(i=>{const d=document.createElement('div');d.className='note-item';d.innerHTML=`<div class="note-cat">🎒</div>${i}`;list.appendChild(d);});
+    if(!state.notes.length&&!state.inventory.length) list.innerHTML='<div class="note-item" style="color:#4a4a5a">Пусто</div>';
+}
+
+function renderAvito(){
+    showPhoneScreen('avito-screen');
+    const list=document.getElementById('avito-list');list.innerHTML='';
+    state.avito.forEach(item=>{
+        const div=document.createElement('div');div.className='avito-item';
+        div.innerHTML=`<div class="avito-img">${item.icon}</div><div class="avito-info"><div class="avito-name">${item.name}</div><div class="avito-desc">${item.desc}</div></div><button class="avito-buy ${item.bought?'bought':''}">${item.bought?'✓':item.price+' р.'}</button>`;
+        if(!item.bought&&state.money>=item.price){div.querySelector('.avito-buy').onclick=()=>{state.money-=item.price;item.bought=true;state.inventory.push(`${item.icon} ${item.name}`);updateUI();renderAvito();};}
+        list.appendChild(div);
+    });
+}
+
+function renderZhes(){
+    showPhoneScreen('zhes-screen-view');
+    const sc=document.getElementById('zhes-screen');
+    const canCall=state.zhes.called<state.day;
+    sc.innerHTML=`<div class="zhes-status"><div style="font-size:32px;margin-bottom:12px">📞</div><div style="color:#8a8aa0;font-size:14px">ЖЭС-48</div><div style="color:#4a4a5a;font-size:11px;margin-top:4px">Статус: ${state.zhes.status}</div></div><button class="zhes-call-btn ${canCall?'':'disabled'}" id="zhes-call">${canCall?'Позвонить':'Перезвоните завтра'}</button><div class="zhes-log" id="zhes-log"></div>`;
+    if(canCall)document.getElementById('zhes-call').onclick=()=>callZhes();
+    state.zhes.log.forEach(l=>{document.getElementById('zhes-log').innerHTML+=`<div class="zhes-log-item">${l.time} — ${l.text}</div>`;});
+}
+function callZhes(){
+    state.zhes.called++;
+    const r=[{text:'Заяўка зарэгістравана.',status:'заявка'},{text:'Спецыяліст будзе.',status:'ожидание'},{text:'Перадалі бригадзе.',status:'в работе'}][Math.min(state.zhes.called-1,2)];
+    state.zhes.log.push({time:`День ${state.day}`,text:r.text});state.zhes.status=r.status;renderZhes();
+}
+
+function showPanel(type){
+    const o=document.getElementById('panel-overlay'),c=document.getElementById('panel-content');o.classList.add('active');let h='';
+    if(type==='people'){h='<h2>Соседи</h2>';if(!state.people_met.length)h+='<div class="panel-item">Никого.</div>';state.people_met.forEach(p=>{const t=state.trust[p.id]||0;h+=`<div class="panel-item"><div class="label">${'●'.repeat(t)}${'○'.repeat(5-t)}</div>${p.name} — ${p.desc}</div>`;});}
+    else if(type==='yard'){h='<h2>Двор</h2>';const l={lavochka:'Лавочка',fonar:'Фонарь',musor:'Мусор',ploschadka:'Площадка',klumba:'Клумба'};Object.keys(state.yard).forEach(k=>{h+=`<div class="panel-item"><div class="label">${l[k]}</div>${state.yard[k]}</div>`;});}
+    c.innerHTML=h;
+}
+function closePanel(){document.getElementById('panel-overlay').classList.remove('active');}
+
+function showDaySummary(){
+    const s=document.getElementById('day-summary'),c=document.getElementById('summary-content');
+    let h='<h2>День '+state.day+' — окончен</h2>';
+    const l={lavochka:'Лавочка',fonar:'Фонарь',musor:'Мусор',ploschadka:'Площадка',klumba:'Клумба'};
+    const fixed=Object.entries(state.yard).filter(([k,v])=>v.includes('✓'));
+    if(fixed.length){h+='<h3>Двор</h3>';fixed.forEach(([k,v])=>{h+=`<div class="summary-item">${l[k]}: ${v}</div>`;});}
+    if(state.people_met.length){h+='<h3>Знакомства</h3>';state.people_met.forEach(p=>{h+=`<div class="summary-item">${p.name}</div>`;});}
+    h+='<button id="next-day-btn">Ден   2 →</button>';
+    c.innerHTML=h;s.classList.add('active');
+}
+
+const scenes={};
+scenes.opening=[
+    {type:'bg',bg:'room_day'},{type:'info',text:'День 1 · Четверг · Утро'},
+    {type:'text',text:'Первая ночь в бабушкиной квартире.'},
+    {type:'text',text:'Матрас, коробки, обои в цветочек.'},
+    {type:'transition'},{type:'bg',bg:'window_view'},
+    {type:'text',text:'Подходите к окну. Двор внизу.'},
+    {type:'text',text:'Лавочка на кирпиче. Ржавые качели. Мусор.'},
+    {type:'text',text:'Мужик в жилетке метёт.'},
+    {type:'action',fn:()=>{state.chats.mama.locked=false;state.chats.dom7.locked=false;updatePhoneBadge();}},
+    {type:'text',text:'📱 Мама написала.',className:'system'},
+    {type:'transition'},{type:'bg',bg:'yard_day'},{type:'hub'}
+];
+scenes.explore_yard = [
+    {type:'bg', bg:'yard_day'},
+    {type:'action', fn:() => showChar('rygor', 'rygor_neutral.png', 'center')},
+    {type:'text', text:'Двор. У подъезда — мужик с метлой.'},
+    {type:'choices', choices:[
+        {text:'Поздороваться', action:() => {
+            state.trust.rygor++;
+            state.people_met.push({id:'rygor',name:'Рыгор',desc:'дворник'});
+            unlockChat('rygor');
+            state.chats.rygor.messages=[{sender:'Рыгор',text:'Калі трэба падвал — пішы',time:'10:00'}];
+            state.chats.rygor.unread=1;
+            state.chats.rygor.replies=[{text:'Добра, дзякуй',response:{sender:'Рыгор',text:'👍',time:''},nextReplies:[]}];
+            updatePhoneBadge();
+            runScene([
+                {type:'text', text:'— Угу. Ключ ад падвала — у мяне.', className:'dialogue'},
+                {type:'text', text:'📱 Рыгор в контактах.', className:'system'},
+                {type:'action', fn:() => hideChar('rygor')}
+            ],() => {state.flags.explored_yard=true; returnToHub();});
+        }},
+        {text:'Осмотреть двор', action:() => {
+            hideChar('rygor');
+            state.notes.push('Лавочка — болты + ключ');
+            state.notes.push('Фонарь — лампа');
+            runScene([
+                {type:'text', text:'Лавочка, фонарь, мусор — всё требует ремонта.'},
+                {type:'text', text:'📋 Записано.', className:'system'}
+            ],() => {state.flags.explored_yard=true; returnToHub();});
+        }}
+    ]}
+];
+scenes.go_shop=[
+    {type:'transition'},{type:'bg',bg:'shop'},
+    {type:'text',text:'Ларёк. Іван за прилавком.'},
+    {type:'choices',choices:[
+        {text:'Хлеб и молоко',action:()=>{state.money-=3;updateUI();if(!state.people_met.find(p=>p.id==='ivan'))state.people_met.push({id:'ivan',name:'Іван',desc:'продавец'});runScene([{type:'text',text:'— Тры рублі.',className:'dialogue'}],()=>{setBg('yard_day');returnToHub();});}},
+        {text:'Поговорить',action:()=>{state.trust.ivan++;if(!state.people_met.find(p=>p.id==='ivan'))state.people_met.push({id:'ivan',name:'Іван',desc:'продавец'});runScene([{type:'text',text:'— Бабулю памятаю. Добрая была.',className:'dialogue'}],()=>{setBg('yard_day');returnToHub();});}}
+    ]}
+];
+scenes.talk_rygor = [
+    {type:'bg', bg:'yard_day'},
+    {type:'action', fn:() => showChar('rygor', 'rygor_neutral.png', 'center')},
+    {type:'text', text:'Рыгор с метлой.'},
+    {type:'choices', choices:[
+        {text:'Что нужно для лавочки?', action:() => {
+            runScene([
+                {type:'text', text:'— Болт і ключ. На Авіта глядзі.', className:'dialogue'},
+                {type:'action', fn:() => hideChar('rygor')}
+            ], returnToHub);
+        }},
+        {text:'Что слышно?', action:() => {
+            state.trust.rygor++;
+            runScene([
+                {type:'text', text:'— Ціха. Музыкант толькі шуміць.', className:'dialogue'},
+                {type:'action', fn:() => hideChar('rygor')}
+            ], returnToHub);
+        }}
+    ]}
+];scenes.talk_tamara=[
+    {type:'bg',bg:'yard_day'},{type:'text',text:'Тамара на лавочке.'},
+    {type:'choices',choices:[
+        {text:'Как дела?',action:()=>{state.trust.tamara++;runScene([{type:'text',text:'— Раней тут клумба была.',className:'dialogue'}],returnToHub);}},
+        {text:'Кто тут живёт?',action:()=>{runScene([{type:'text',text:'— Жэня, Вітольд, музыкант...',className:'dialogue'}],returnToHub);}}
+    ]}
+];
+scenes.fix_bench=[{type:'bg',bg:'yard_day'},{type:'text',text:'Прикручиваете ножку.'},{type:'action',fn:()=>{state.yard.lavochka='починена ✓';sendChatMessage('dom7',{sender:'Тамара С.',text:'Лавачку паправілі! 👏',time:'15:30'});state.trust.tamara++;}},{type:'text',text:'✓ Лавочка починена.',className:'system'}];
+scenes.fix_lamp=[{type:'bg',bg:'yard_day'},{type:'text',text:'Вкручиваете лампу.'},{type:'action',fn:()=>{state.yard.fonar='горит ✓';sendChatMessage('dom7',{sender:'Вітольд',text:'Ліхтар гарыць!',time:'20:10'});state.trust.vitold++;}},{type:'text',text:'✓ Фонарь работает.',className:'system'}];
+scenes.clean_trash=[{type:'bg',bg:'yard_day'},{type:'text',text:'Собираете мусор.'},{type:'action',fn:()=>{state.yard.musor='убран ✓';sendChatMessage('dom7',{sender:'Наташа',text:'Чысцей стала 👍',time:'16:00'});}},{type:'text',text:'✓ Мусор убран.',className:'system'}];
+scenes.plant_flowers=[{type:'bg',bg:'yard_day'},{type:'text',text:'Сажаете семена.'},{type:'action',fn:()=>{state.yard.klumba='посажено ✓';sendChatMessage('dom7',{sender:'Тамара С.',text:'Кветкі!! 🌸',time:'14:00'});state.trust.tamara+=2;}},{type:'text',text:'✓ Цветы посажены.',className:'system'}];
+scenes.evening_event=[
+    {type:'transition'},{type:'bg',bg:'yard_night'},
+    {type:'info',text:'День 1 · Четверг · Вечер'},
+    {type:'action',fn:()=>{sendChatMessage('dom7',{sender:'Алеся',text:'Прывітанне новаму суседу! 🤗',time:'19:20'});state.chats.dom7.replies=[{text:'Прывет!',response:{sender:'Алеся',text:'Запрашаем!',time:'19:22'},nextReplies:[]}];}},
+    {type:'text',text:'Телефон вибрирует.',className:'system'},
+    {type:'choices',choices:[
+        {text:'Открыть телефон',action:()=>{openPhone();setTimeout(advanceTime,100);}},
+        {text:'Потом',action:()=>advanceTime()}
+    ]}
+];
+scenes.night_end=[
+    {type:'transition'},{type:'bg',bg:'room_night'},
+    {type:'info',text:'День 1 · Четверг · Ночь'},
+    {type:'text',text:'Матрас. Потолок. Тишина.'},
+    {type:'summary'}
+];
+
+document.addEventListener('keydown',e=>{
+    if(e.code==='Space'||e.code==='Enter'){e.preventDefault();if(document.getElementById('continue-btn').classList.contains('visible'))advance();}
+    if(e.code==='ArrowRight'&&document.getElementById('action-menu').classList.contains('visible'))carouselNext();
+    if(e.code==='ArrowLeft'&&document.getElementById('action-menu').classList.contains('visible'))carouselPrev();
+});
+
+window.onload=()=>{updateUI();runScene(scenes.opening);};
+</script>
+</body>
+</html>

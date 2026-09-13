@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Штаб</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,300;7..72,400;7..72,500&family=Inter:wght@400;500;600&display=swap');
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;overflow:hidden;background:#1a1a1a;font-family:'Literata',serif;}
+
+/* === ПАЛИТРА === */
+:root{
+    --bg-deep:#0f0d0a;
+    --bg-panel:#1e1a14;
+    --bg-card:#151210;
+    --bg-card-hover:#2a2318;
+    --border:#3d3425;
+    --border-light:#5a4a35;
+    --text-main:#e0d8c8;
+    --text-dim:#a09078;
+    --text-faint:#6a5a45;
+    --accent:#d4a84a;
+    --accent-dim:#8a7040;
+    --highlight:#e0c070;
+    --danger:#c85a3a;
+    --transition-bg:#0f0d0a;
+    /* книга */
+    --book-bg:#e0d4b8;
+    --book-header:#c8b898;
+    --book-border:#a89870;
+    --book-text:#3a2e1e;
+    --book-text-dim:#7a6848;
+    --book-card:#ece4cc;
+    --book-shadow:#b8a880;
+    --book-line:#c0b088;
+    --book-ulika:#8a4a20;
+}
+
+#phone-frame{width:390px;height:844px;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);border-radius:40px;border:8px solid #2a2520;box-shadow:0 0 0 2px #0a0908,0 20px 60px rgba(0,0,0,0.6);overflow:hidden;background:var(--bg-deep);}
+@media(max-width:500px){#phone-frame{width:100%;height:100%;position:fixed;top:0;left:0;transform:none;border-radius:0;border:none;box-shadow:none;}}
+#game{width:100%;height:100%;position:relative;color:var(--text-main);overflow:hidden;background-size:cover;background-position:center bottom;background-repeat:no-repeat;background-color:var(--bg-deep);}
+
+/* ПЕРСОНАЖИ */
+#characters{position:absolute;top:0;left:0;right:0;bottom:0;pointer-events:none;z-index:2;}
+#characters img{position:absolute;bottom:77px;left:50%;transform:translateX(-50%);height:52%;object-fit:contain;opacity:0;transition:opacity 0.4s ease;}
+#characters img.visible{opacity:1;}
+#characters img.char-left{left:25%;}
+#characters img.char-right{left:75%;}
+#characters img.char-center{left:50%;}
+
+/* ВЕРХНЯЯ ПАНЕЛЬ */
+#info-bar{position:relative;z-index:5;display:flex;align-items:center;justify-content:space-between;padding:36px 14px 10px;background:var(--bg-panel);border-bottom:1px solid var(--border);}
+#day-info{font-family:'Inter',sans-serif;font-size:10px;font-weight:500;color:var(--text-dim);letter-spacing:0.3px;}
+#info-right{display:flex;align-items:center;gap:8px;}
+#resources{display:flex;align-items:center;gap:7px;font-family:'Inter',sans-serif;font-size:10px;color:var(--text-dim);}
+#energy-dots{display:flex;gap:3px;align-items:center;}
+.energy-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);transition:background 0.3s;}
+.energy-dot.empty{background:var(--border);}
+#stats-mini{display:flex;gap:6px;font-size:10px;color:var(--text-dim);}
+.menu-btn{width:26px;height:26px;background:none;border:1px solid var(--border);border-radius:4px;color:var(--text-dim);font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;position:relative;}
+.menu-btn:active{background:var(--bg-card-hover);color:var(--text-main);}
+.menu-btn.has-notif::after{content:'';position:absolute;top:2px;right:2px;width:6px;height:6px;background:var(--danger);border-radius:50%;}
+
+/* НИЖНЯЯ ПАНЕЛЬ */
+#bottom-section{position:absolute;bottom:0;left:0;right:0;z-index:3;}
+#content-area{background:var(--bg-panel);border-top:1px solid var(--border);padding:14px 16px 18px;}
+#text-row{display:flex;align-items:center;gap:14px;}
+#current-text{flex:1;font-size:15px;line-height:1.7;color:var(--text-main);opacity:0;transform:translateY(3px);transition:opacity 0.35s,transform 0.35s;}
+#current-text.visible{opacity:1;transform:translateY(0);}
+#current-text.dialogue{color:var(--highlight);padding-left:12px;border-left:2px solid var(--border);font-style:italic;}
+#current-text.system{color:var(--text-faint);font-size:12px;font-family:'Inter',sans-serif;font-style:normal;}
+#continue-btn{flex-shrink:0;width:44px;height:44px;background:var(--bg-card-hover);border:1px solid var(--border);color:var(--text-dim);font-size:16px;cursor:pointer;border-radius:50%;display:none;align-items:center;justify-content:center;}
+#continue-btn:active{background:var(--border);color:var(--text-main);}
+#continue-btn.visible{display:flex;}
+#choices-container{display:none;flex-direction:column;gap:6px;}
+#choices-container.visible{display:flex;}
+.choice-btn{background:var(--bg-card);border:1px solid var(--border);color:var(--text-main);padding:12px 14px;font-family:'Literata',serif;font-size:14px;text-align:left;cursor:pointer;border-radius:6px;transition:background 0.15s,border-color 0.15s;}
+.choice-btn:active{background:var(--bg-card-hover);border-color:var(--border-light);}
+
+/* КАРУСЕЛЬ */
+#action-menu{display:none;flex-direction:column;}
+#action-menu.visible{display:flex;}
+#carousel{display:flex;align-items:center;}
+.carousel-arrow{width:36px;height:36px;background:none;border:1px solid var(--border);border-radius:50%;color:var(--text-dim);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.carousel-arrow:active{background:var(--bg-card-hover);color:var(--text-main);}
+#carousel-card{flex:1;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin:0 10px;text-align:center;min-height:80px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:opacity 0.2s,transform 0.2s;}
+#carousel-card:active{background:var(--bg-card-hover);border-color:var(--border-light);}
+#carousel-card.disabled{opacity:0.3;pointer-events:none;}
+#carousel-card.switching{opacity:0;transform:scale(0.95);}
+#carousel-icon{font-size:22px;margin-bottom:6px;}
+#carousel-name{font-family:'Inter',sans-serif;font-size:14px;font-weight:500;color:var(--text-main);margin-bottom:3px;}
+#carousel-desc{font-family:'Inter',sans-serif;font-size:11px;color:var(--text-dim);margin-bottom:6px;}
+#carousel-cost{font-family:'Inter',sans-serif;font-size:11px;color:var(--accent);}
+#carousel-dots{display:flex;justify-content:center;gap:5px;margin-top:10px;}
+.carousel-dot{width:6px;height:6px;border-radius:50%;background:var(--border);transition:background 0.2s;}
+.carousel-dot.active{background:var(--text-dim);}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+
+/* ТЕТРАДЬ БАНДЫ */
+#book-overlay{display:none;position:absolute;top:0;left:0;right:0;bottom:0;background:var(--book-bg);z-index:100;flex-direction:column;animation:bookSlideUp 0.3s ease;}
+#book-overlay.active{display:flex;}
+@keyframes bookSlideUp{from{transform:translateY(100%);}to{transform:translateY(0);}}
+.book-header{display:flex;align-items:center;justify-content:space-between;padding:40px 16px 12px;background:var(--book-header);border-bottom:2px solid var(--book-border);flex-shrink:0;}
+.book-header h3{font-family:'Literata',serif;font-size:16px;font-weight:500;color:var(--book-text);}
+.book-back{background:none;border:none;color:var(--book-text-dim);font-size:22px;cursor:pointer;padding:4px 8px;}
+.book-close{background:none;border:none;color:var(--book-text-dim);font-size:18px;cursor:pointer;padding:4px 8px;font-family:'Inter',sans-serif;}
+#book-home{flex:1;padding:16px;overflow-y:auto;color:var(--book-text);background:var(--book-bg) repeating-linear-gradient(transparent,transparent 27px,var(--book-line) 28px);}
+.book-tab{display:flex;align-items:center;gap:14px;padding:16px;margin-bottom:12px;background:var(--book-card);border:1px solid var(--book-border);border-radius:6px;cursor:pointer;box-shadow:2px 2px 0 var(--book-shadow);}
+.book-tab:active{transform:translate(1px,1px);box-shadow:1px 1px 0 var(--book-shadow);}
+.book-tab-icon{font-size:26px;}
+.book-tab-title{font-family:'Literata',serif;font-size:16px;color:var(--book-text);font-weight:500;}
+.book-tab-sub{font-family:'Inter',sans-serif;font-size:11px;color:var(--book-text-dim);margin-top:2px;}
+.book-screen{display:none;flex-direction:column;flex:1;overflow:hidden;}
+.book-screen.active{display:flex;}
+.book-body{flex:1;overflow-y:auto;padding:16px;color:var(--book-text);background:var(--book-bg);}
+.dnevnik-item{padding:10px 0;border-bottom:1px dashed var(--book-line);font-family:'Literata',serif;font-size:14px;color:var(--book-text);line-height:1.5;}
+.dnevnik-item.ulika{color:var(--book-ulika);font-weight:500;}
+.karta-loc{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px dashed var(--book-line);}
+.karta-loc.locked{opacity:0.4;}
+.karta-icon{font-size:24px;}
+.karta-name{font-family:'Literata',serif;font-size:15px;color:var(--book-text);}
+.karta-desc{font-family:'Inter',sans-serif;font-size:11px;color:var(--book-text-dim);}
+.klyatva-box{background:var(--book-card);border:2px dashed var(--book-border);padding:20px;border-radius:8px;font-family:'Literata',serif;font-size:16px;color:var(--book-text);line-height:2;text-align:center;font-style:italic;}
+
+/* ПАНЕЛИ */
+#panel-overlay{display:none;position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(14,12,9,0.97);z-index:50;padding:48px 16px 16px;overflow-y:auto;}
+#panel-overlay.active{display:block;}
+#panel-content h2{font-family:'Inter',sans-serif;font-size:11px;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:14px;}
+.panel-item{padding:11px 0;border-bottom:1px solid #1e1a14;font-size:13px;color:var(--text-main);line-height:1.5;}
+.panel-item .label{color:var(--text-faint);font-size:10px;font-family:'Inter',sans-serif;margin-bottom:2px;}
+.progress-bar{height:6px;background:var(--border);border-radius:3px;margin-top:6px;overflow:hidden;}
+.progress-fill{height:100%;background:var(--accent);transition:width 0.4s;}
+.close-panel{position:absolute;top:14px;right:14px;background:none;border:none;color:var(--text-faint);font-size:22px;cursor:pointer;}
+
+/* ПЕРЕХОД */
+#transition{position:absolute;top:0;left:0;right:0;bottom:0;background:var(--transition-bg);z-index:200;opacity:0;pointer-events:none;transition:opacity 0.5s;}
+#transition.active{opacity:1;pointer-events:all;}
+#notch{position:absolute;top:0;left:50%;transform:translateX(-50%);width:120px;height:28px;background:var(--bg-deep);border-radius:0 0 16px 16px;z-index:300;}
+@media(max-width:500px){#notch{display:none;}}
+</style>
+</head>
+<body>
+<div id="phone-frame">
+<div id="notch"></div>
+<div id="game">
+    <div id="transition"></div>
+    <div id="characters"></div>
+
+    <div id="info-bar">
+        <div id="day-info">1 чэрвеня · Панядзелак</div>
+        <div id="info-right">
+            <div id="resources">
+                <span>⚡</span><div id="energy-dots"></div>
+                <div id="stats-mini">
+                    <span title="Смелость">💪<span id="stat-smel">1</span></span>
+                    <span title="Сплочённость">🤝<span id="stat-splo">3</span></span>
+                    <span title="Мелочь">🪙<span id="stat-mel">0</span></span>
+                </div>
+            </div>
+            <button class="menu-btn" id="book-btn" onclick="openBook()">📓</button>
+            <button class="menu-btn" onclick="showPanel('banda')">👥</button>
+            <button class="menu-btn" onclick="showPanel('shtab')">🏠</button>
+        </div>
+    </div>
+
+    <div id="bottom-section">
+        <div id="content-area">
+            <div id="text-row">
+                <div id="current-text"></div>
+                <button id="continue-btn" onclick="advance()">→</button>
+            </div>
+            <div id="choices-container"></div>
+            <div id="action-menu">
+                <div id="carousel">
+                    <button class="carousel-arrow" onclick="carouselPrev()">‹</button>
+                    <div id="carousel-card" onclick="carouselSelect()">
+                        <div id="carousel-icon"></div>
+                        <div id="carousel-name"></div>
+                        <div id="carousel-desc"></div>
+                        <div id="carousel-cost"></div>
+                    </div>
+                    <button class="carousel-arrow" onclick="carouselNext()">›</button>
+                </div>
+                <div id="carousel-dots"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="book-overlay">
+        <div class="book-screen active" id="book-home-screen">
+            <div class="book-header"><h3>Тетрадь банды</h3><button class="book-close" onclick="closeBook()">✕</button></div>
+            <div id="book-home">
+                <div class="book-tab" onclick="openBookScreen('dnevnik')"><span class="book-tab-icon">📝</span><div><div class="book-tab-title">Дневник</div><div class="book-tab-sub">Заметки и улики</div></div></div>
+                <div class="book-tab" onclick="openBookScreen('karta')"><span class="book-tab-icon">🗺️</span><div><div class="book-tab-title">Карта двора</div><div class="book-tab-sub">Что мы нашли</div></div></div>
+                <div class="book-tab" onclick="openBookScreen('sokrov')"><span class="book-tab-icon">🎒</span><div><div class="book-tab-title">Сокровищница</div><div class="book-tab-sub">Наши вещи</div></div></div>
+                <div class="book-tab" onclick="openBookScreen('klyatva')"><span class="book-tab-icon">✋</span><div><div class="book-tab-title">Клятва</div><div class="book-tab-sub">Наш закон</div></div></div>
+            </div>
+        </div>
+        <div class="book-screen" id="dnevnik-screen"><div class="book-header"><button class="book-back" onclick="bookBack()">‹</button><h3>Дневник</h3><button class="book-close" onclick="closeBook()">✕</button></div><div class="book-body" id="dnevnik-body"></div></div>
+        <div class="book-screen" id="karta-screen"><div class="book-header"><button class="book-back" onclick="bookBack()">‹</button><h3>Карта двора</h3><button class="book-close" onclick="closeBook()">✕</button></div><div class="book-body" id="karta-body"></div></div>
+        <div class="book-screen" id="sokrov-screen"><div class="book-header"><button class="book-back" onclick="bookBack()">‹</button><h3>Сокровищница</h3><button class="book-close" onclick="closeBook()">✕</button></div><div class="book-body" id="sokrov-body"></div></div>
+        <div class="book-screen" id="klyatva-screen"><div class="book-header"><button class="book-back" onclick="bookBack()">‹</button><h3>Клятва</h3><button class="book-close" onclick="closeBook()">✕</button></div><div class="book-body" id="klyatva-body"></div></div>
+    </div>
+
+    <div id="panel-overlay"><button class="close-panel" onclick="closePanel()">×</button><div id="panel-content"></div></div>
+</div>
+</div>
+
+<script>
+// ============ STATE ============
+let state = {
+    day:1, month:'june', timeSlot:'morning',
+    energy:3, maxEnergy:3,
+    smelost:1, splochennost:3, meloch:0,
+    shtab:{stage:0, svet:false, mebel:false, dver:false, flag:false, sklad:false, pripasy:false},
+    banda:{vitek:2, romka:2, svetka:2, maloy:2},
+    tayna:{layer:0, uliki:[], pasha_contact:0, seny_znaet:false, lozhnyi_sled:null, razgadka:false, reshenie:null},
+    flags:{}, dnevnik:[], vospominania:[], inventory:[],
+    karta:{podval:false, cherdak:false, zabroshka:false, laz:false},
+    banda_met:false, _lastFind:null, keyChoice:null,
+    usedToday:[]
+};
+
+// ============ UI ============
+function updateUI(){
+    document.getElementById('stat-smel').textContent=state.smelost;
+    document.getElementById('stat-splo').textContent=state.splochennost;
+    document.getElementById('stat-mel').textContent=state.meloch;
+    const c=document.getElementById('energy-dots');c.innerHTML='';
+    for(let i=0;i<state.maxEnergy;i++){const d=document.createElement('div');d.className='energy-dot'+(i>=state.energy?' empty':'');c.appendChild(d);}
+    updateBookBadge();
+}
+function updateBookBadge(){
+    const btn=document.getElementById('book-btn');
+    if(state.flags._newNote){btn.classList.add('has-notif');}else{btn.classList.remove('has-notif');}
+}
+function setBg(k){document.getElementById('game').style.backgroundImage=`url(${k}.png)`;}
+
+// ============ ПОДВАЛ: фон по стадии ============
+function podvalBg(){
+    const s=state.shtab.stage;
+    if(s<=0)return 'podval_dark';
+    if(s===1)return 'podval_stage1';
+    if(s===2)return 'podval_stage2';
+    return 'podval_shtab';
+}
+
+// ============ CHARACTERS ============
+function showChar(id,src,pos){
+    let img=document.getElementById('char-'+id);
+    if(!img){img=document.createElement('img');img.id='char-'+id;document.getElementById('characters').appendChild(img);}
+    img.src=src+'.png';img.className=pos?'char-'+pos:'';
+    setTimeout(()=>img.classList.add('visible'),20);
+}
+function hideChar(id){const img=document.getElementById('char-'+id);if(img){img.classList.remove('visible');setTimeout(()=>img.remove(),400);}}
+function clearChars(){const c=document.getElementById('characters');c.querySelectorAll('img').forEach(i=>i.classList.remove('visible'));setTimeout(()=>c.innerHTML='',400);}
+
+// ============ SCENE ENGINE ============
+let currentSteps=[],stepIndex=0,afterSceneCallback=null,pendingCallback=null;
+
+function runScene(scene,onComplete){
+    currentSteps=scene;stepIndex=0;
+    if(onComplete!==undefined)pendingCallback=onComplete;
+    afterSceneCallback=pendingCallback;
+    hideAll();document.getElementById('text-row').style.display='flex';showStep();
+}
+function showStep(){
+    if(stepIndex>=currentSteps.length){
+        const cb=afterSceneCallback;afterSceneCallback=null;pendingCallback=null;
+        if(cb)cb();return;
+    }
+    const s=currentSteps[stepIndex];
+    if(s.type==='text'){const t=typeof s.text==='function'?s.text():s.text;showText(t,typeof s.className==='function'?s.className():(s.className||''));showBtn();}
+    else if(s.type==='bg'){setBg(typeof s.bg==='function'?s.bg():s.bg);stepIndex++;showStep();}
+    else if(s.type==='transition'){doTransition(()=>{stepIndex++;showStep();});}
+    else if(s.type==='choices'){document.getElementById('text-row').style.display='none';showChoices(s.choices);}
+    else if(s.type==='info'){document.getElementById('day-info').textContent=s.text;stepIndex++;showStep();}
+    else if(s.type==='action'){s.fn();stepIndex++;showStep();}
+    else if(s.type==='hub'){hideAll();showActionHub();}
+}
+function advance(){stepIndex++;showStep();}
+function showText(text,cls){const el=document.getElementById('current-text');el.classList.remove('visible','dialogue','system');el.textContent='';setTimeout(()=>{el.textContent=text;if(cls)el.classList.add(cls);el.classList.add('visible');},40);}
+function hideText(){const el=document.getElementById('current-text');el.classList.remove('visible');el.textContent='';}
+function showBtn(){document.getElementById('continue-btn').classList.add('visible');}
+function hideBtn(){document.getElementById('continue-btn').classList.remove('visible');}
+function hideAll(){hideBtn();hideText();document.getElementById('choices-container').classList.remove('visible');document.getElementById('choices-container').innerHTML='';document.getElementById('action-menu').classList.remove('visible');document.getElementById('text-row').style.display='flex';}
+function showChoices(choices){const c=document.getElementById('choices-container');c.innerHTML='';c.classList.add('visible');document.getElementById('text-row').style.display='none';choices.forEach((ch,i)=>{const btn=document.createElement('button');btn.className='choice-btn';btn.innerHTML=ch.text;btn.style.opacity='0';btn.style.animation=`fadeIn 0.3s ease ${i*0.06}s forwards`;btn.onclick=()=>{c.classList.remove('visible');c.innerHTML='';document.getElementById('text-row').style.display='flex';ch.action();};c.appendChild(btn);});}
+function doTransition(cb){const t=document.getElementById('transition');t.classList.add('active');setTimeout(()=>{clearChars();cb();setTimeout(()=>t.classList.remove('active'),80);},500);}
+
+// ============ CAROUSEL HUB ============
+let hubActions=[],carouselIndex=0;
+function showActionHub(){document.getElementById('text-row').style.display='none';document.getElementById('choices-container').classList.remove('visible');document.getElementById('action-menu').classList.add('visible');hubActions=getAvailableActions();carouselIndex=0;renderCarousel();}
+function renderCarousel(){const a=hubActions[carouselIndex];if(!a)return;const card=document.getElementById('carousel-card');document.getElementById('carousel-icon').textContent=a.icon;document.getElementById('carousel-name').textContent=a.name;document.getElementById('carousel-desc').textContent=a.desc;document.getElementById('carousel-cost').textContent=a.cost>0?'⚡ '+a.cost:'—';if(a.cost>state.energy&&a.cost>0)card.classList.add('disabled');else card.classList.remove('disabled');const dots=document.getElementById('carousel-dots');dots.innerHTML='';hubActions.forEach((_,i)=>{const d=document.createElement('div');d.className='carousel-dot'+(i===carouselIndex?' active':'');dots.appendChild(d);});}
+function carouselNext(){const card=document.getElementById('carousel-card');card.classList.add('switching');setTimeout(()=>{carouselIndex=(carouselIndex+1)%hubActions.length;renderCarousel();card.classList.remove('switching');},150);}
+function carouselPrev(){const card=document.getElementById('carousel-card');card.classList.add('switching');setTimeout(()=>{carouselIndex=(carouselIndex-1+hubActions.length)%hubActions.length;renderCarousel();card.classList.remove('switching');},150);}
+function carouselSelect(){const a=hubActions[carouselIndex];if(!a||(a.cost>state.energy&&a.cost>0))return;state.energy-=a.cost;updateUI();document.getElementById('action-menu').classList.remove('visible');a.action();}
+
+// ============ ACTIONS ============
+function getAvailableActions(){
+    const all=[];
+    if(state.flags.shtab_founded){
+        if(state.shtab.stage<3)
+            all.push({id:'build',icon:'🔨',name:'Строить штаб',desc:'Обустроить подвал',cost:1,action:()=>doAction('build',scenes.build_shtab)});
+        if(!(state.shtab.svet&&state.shtab.mebel&&state.shtab.dver))
+            all.push({id:'pomoyka',icon:'🗑️',name:'Помойка',desc:'Найти что-то для штаба',cost:1,action:()=>doAction('pomoyka',scenes.pomoyka)});
+        if(!state.shtab.pripasy)
+            all.push({id:'edu',icon:'🍬',name:'Стащить еду',desc:'Припасы для штаба',cost:0,action:()=>doAction('edu',scenes.stashit_edu)});
+    }
+    all.push({id:'home',icon:'🏠',name:'Домой',desc:'Хватит на сегодня',cost:0,action:()=>advanceTime()});
+    return all.filter(a=>a.id==='home'||a.repeatable||!state.usedToday.includes(a.id));
+}
+function doAction(id,scene){
+    if(id!=='home')state.usedToday.push(id);
+    runScene(scene,returnToHub);
+}
+function returnToHub(){if(state.energy<=0)advanceTime();else showActionHub();}
+
+// ============ TIME ============
+function advanceTime(){
+    if(state.timeSlot==='morning'){state.timeSlot='day';showActionHub();}
+    else if(state.timeSlot==='day'){state.timeSlot='evening';checkEveningEvent();}
+    else if(state.timeSlot==='evening'){state.timeSlot='night';checkNightEvent();}
+    else{endDay();}
+}
+function checkEveningEvent(){
+    if(state.day===4)runScene(scenes.june4_evening);
+    else advanceTime();
+}
+function checkNightEvent(){advanceTime();}
+function endDay(){
+    if(state.day>=4){runScene(scenes.to_be_continued);return;}
+    state.day++;state.timeSlot='morning';state.energy=state.maxEnergy;
+    state.usedToday=[];
+    updateUI();doTransition(()=>startDay());
+}
+function startDay(){
+    document.getElementById('day-info').textContent=`${state.day} чэрвеня · ${getDayOfWeek(state.day)}`;
+    const cal=june[state.day];
+    if(cal&&cal.scene&&scenes[cal.scene])runScene(scenes[cal.scene]);
+}
+function getDayOfWeek(d){return['Нядзеля','Панядзелак','Аўторак','Серада','Чацвер','Пятніца','Субота'][(d)%7];}
+
+// ============ ТАЙНА ============
+function addUlika(id,label){
+    if(!state.tayna.uliki.includes(id)){
+        state.tayna.uliki.push(id);
+        state.dnevnik.push({t:'ulika',text:label||('Улика: '+id)});
+        state.flags._newNote=true;updateUI();
+        checkLayer2();checkLayer3();
+    }
+}
+function addNote(text){state.dnevnik.push({t:'note',text:text});state.flags._newNote=true;updateUI();}
+function checkLayer2(){const s1=['U1','U2','U3','U4','U5'].filter(u=>state.tayna.uliki.includes(u));if(state.tayna.layer===1&&s1.length>=3){state.tayna.layer=2;}}
+function checkLayer3(){const u=state.tayna.uliki;if(state.tayna.layer===2&&u.includes('U6')&&u.includes('U10')){state.tayna.layer=3;}}
+
+// ============ ИНВЕНТАРЬ ============
+function addItem(name){if(!state.inventory.includes(name))state.inventory.push(name);state.flags._newNote=true;updateUI();}
+function hasItem(name){return state.inventory.includes(name);}
+
+// ============ CALENDAR ============
+const june={1:{scene:'june_day1'},2:{scene:'june_day2'},3:{scene:'june_day3'},4:{scene:'june_day4'}};
+
+// ============ SCENES ============
+const scenes={};
+
+// ---------- ДЕНЬ 1 ----------
+scenes.june_day1=[
+    {type:'bg',bg:'room_boxes'},{type:'info',text:'1 чэрвеня · Панядзелак'},
+    {type:'text',text:'Коробки. Везде коробки. Пахнет новой квартирой — клеем и пылью.'},
+    {type:'text',text:'Переехали вчера. Новый дом, новый двор, новая школа с сентября.'},
+    {type:'text',text:'А пока — лето. Три месяца пустоты, в которой ты никого не знаешь.',className:'system'},
+    {type:'text',text:'...Знал бы я тогда, что это лето изменит всё. Что оно будет — последним настоящим.',className:'dialogue'},
+    {type:'action',fn:()=>{state.vospominania.push('пролог');}},
+    {type:'text',text:'— Дени-и-ис! Иди во двор, чего дома сидеть! — кричит мама с кухни.'},
+    {type:'choices',choices:[
+        {text:'Выйти во двор',action:()=>runScene(scenes.june1_yard)},
+        {text:'Ещё разберу коробки',action:()=>runScene([
+            {type:'text',text:'Возишься с коробками. Находишь старый фонарик. Работает.'},
+            {type:'action',fn:()=>{addItem('🔦 Фонарик');}},
+            {type:'text',text:'🎒 Фонарик — в карман. Пригодится.',className:'system'},
+            {type:'text',text:'Всё равно рано или поздно надо выходить.'},
+            {type:'action',fn:()=>runScene(scenes.june1_yard)}
+        ])}
+    ]}
+];
+scenes.june1_yard=[
+    {type:'transition'},{type:'bg',bg:'yard_summer'},
+    {type:'text',text:'Двор. Панельки квадратом. Коробка футбольная, гаражи, кусты сирени.'},
+    {type:'text',text:'Жара. Кузнечики. Где-то капает вода из трубы. Лето во всю силу.'},
+    {type:'text',text:'На лавочке у первого подъезда — трое. Пацаны и девчонка. Смотрят на тебя.'},
+    {type:'action',fn:()=>{showChar('vitek','vitek_neutral','left');showChar('svetka','svetka_neutral','center');showChar('romka','romka_neutral','right');}},
+    {type:'text',text:'— О, новенький. — Старший, вихрастый, щурится. — Ты из третьего подъезда, да? Который вчера переехал?',className:'dialogue'},
+    {type:'choices',choices:[
+        {text:'Ага. Денис.',action:()=>{state.banda.vitek++;runScene(scenes.june1_meet_good);}},
+        {text:'А тебе какое дело?',action:()=>{state.banda.vitek--;state.smelost++;runScene(scenes.june1_meet_bold);}},
+        {text:'(Молча кивнуть)',action:()=>runScene(scenes.june1_meet_shy)}
+    ]}
+];
+scenes.june1_meet_good=[
+    {type:'text',text:'— Витёк. — Протягивает руку по-взрослому. — Это Светка, это Ромка.',className:'dialogue'},
+    {type:'text',text:'Светка кивнула, изучает тебя внимательно. Ромка жуёт что-то, машет рукой.'},
+    {type:'text',text:'— Ромка, — говорит толстенький с набитым ртом. — А у тебя приставка есть?',className:'dialogue'},
+    {type:'text',text:'— Ромка! Дай человеку осмотреться, — фыркает Светка.',className:'dialogue'},
+    {type:'action',fn:()=>{state.banda_met=true;state.splochennost++;updateUI();}},
+    {type:'text',text:'Первый раз за два дня тебе — не одиноко.'},
+    {type:'action',fn:()=>runScene(scenes.june1_maloy)}
+];
+scenes.june1_meet_bold=[
+    {type:'text',text:'Витёк хмыкнул. Оценивающе.'},
+    {type:'text',text:'— О, дерзкий. Ну-ну. — Но не злится. Наоборот, вроде интересно ему.',className:'dialogue'},
+    {type:'text',text:'— Витёк. Светка. Ромка. Запоминай, новенький.',className:'dialogue'},
+    {type:'action',fn:()=>{state.banda_met=true;updateUI();}},
+    {type:'text',text:'Ромка смотрит с уважением — сам бы так не смог.'},
+    {type:'action',fn:()=>runScene(scenes.june1_maloy)}
+];
+scenes.june1_meet_shy=[
+    {type:'text',text:'Молчишь. Витёк ждёт секунду, пожимает плечами.'},
+    {type:'text',text:'— Немой, что ли? Ладно. Витёк я. Это Светка, это Ромка.',className:'dialogue'},
+    {type:'text',text:'Светка смотрит с любопытством — тихих она любит больше болтливых.'},
+    {type:'action',fn:()=>{state.banda_met=true;state.banda.svetka++;}},
+    {type:'action',fn:()=>runScene(scenes.june1_maloy)}
+];
+scenes.june1_maloy=[
+    {type:'text',text:'Из-за гаражей выбегает мелкий пацан. Лет восемь. Коленки в зелёнке.'},
+    {type:'action',fn:()=>{hideChar('romka');showChar('maloy','maloy_neutral','right');}},
+    {type:'text',text:'— Витёк! Витёк! А там кошка застряла! Ой... а это кто? — тычет в тебя пальцем.',className:'dialogue'},
+    {type:'text',text:'— Это Малой. Сеня. Хвост наш, — вздыхает Витёк. — Куда мы, туда и он.',className:'dialogue'},
+    {type:'text',text:'— А я не хвост! Я разведчик! — Малой гордо шмыгает носом.',className:'dialogue'},
+    {type:'choices',choices:[
+        {text:'Разведчик — это круто.',action:()=>{state.banda.maloy+=2;runScene([
+            {type:'text',text:'Малой сияет так, будто ему медаль дали.'},
+            {type:'text',text:'— Вот! Вот! Слышали?! Я разведчик! — прыгает вокруг тебя.',className:'dialogue'},
+            {type:'text',text:'Что-то в этом мелком цепляет. Он лезет ко всем — но как будто ищет чего-то. Или кого-то.',className:'system'},
+            {type:'action',fn:()=>runScene(scenes.june1_end)}
+        ]);}},
+        {text:'(Потрепать по голове)',action:()=>{state.banda.maloy++;runScene([
+            {type:'text',text:'— Э, не трогай причёску! — но видно, что доволен.',className:'dialogue'},
+            {type:'action',fn:()=>runScene(scenes.june1_end)}
+        ]);}}
+    ]}
+];
+scenes.june1_end=[
+    {type:'action',fn:()=>{hideChar('vitek');hideChar('svetka');hideChar('maloy');}},
+    {type:'text',text:'— Ладно, новенький. Завтра выходи. Покажем тебе кое-что. — Витёк подмигивает.',className:'dialogue'},
+    {type:'text',text:'— Ко-е-что! — эхом повторяет Малой и убегает за кошкой.',className:'dialogue'},
+    {type:'text',text:'«Домо-о-ой!» — доносится из окна. Твоя мама.'},
+    {type:'text',text:'Первый день. А двор уже не такой чужой.'},
+    {type:'action',fn:()=>{state.flags.day1_done=true;endDay();}}
+];
+
+// ---------- ДЕНЬ 2 ----------
+scenes.june_day2=[
+    {type:'bg',bg:'room_boxes'},{type:'info',text:'2 чэрвеня · Аўторак'},
+    {type:'text',text:'Просыпаешься сам. Никакой школы. Никакого будильника. Лето.'},
+    {type:'text',text:'За окном уже слышно — мяч стучит о коробку, кто-то смеётся.'},
+    {type:'text',text:'— Денис, хлеба купи по дороге, — мама суёт мелочь. — И далеко не убегай!'},
+    {type:'action',fn:()=>{state.meloch+=3;updateUI();}},
+    {type:'text',text:'🪙 +3 мелочь. Задание: хлеб.',className:'system'},
+    {type:'choices',choices:[{text:'Во двор!',action:()=>runScene(scenes.june2_yard)}]}
+];
+scenes.june2_yard=[
+    {type:'transition'},{type:'bg',bg:'yard_summer'},
+    {type:'action',fn:()=>{showChar('vitek','vitek_neutral','center');}},
+    {type:'text',text:'Витёк уже ждёт. Один. С заговорщицким видом.'},
+    {type:'text',text:'— Пришёл? Молодец. Пошли. Только это — секрет. Понял?',className:'dialogue'},
+    {type:'choices',choices:[
+        {text:'Секрет так секрет. Идём.',action:()=>{state.banda.vitek++;runScene(scenes.june2_podval);}},
+        {text:'А что за секрет-то?',action:()=>runScene([
+            {type:'text',text:'— Увидишь. Не спрашивай. Идёшь или нет? — Витёк уже нетерпелив.',className:'dialogue'},
+            {type:'action',fn:()=>runScene(scenes.june2_podval)}
+        ])}
+    ]}
+];
+scenes.june2_podval=[
+    {type:'transition'},{type:'bg',bg:'podval_dark'},
+    {type:'action',fn:()=>{state.karta.podval=true;}},
+    {type:'text',text:'Витёк отгибает решётку у торца дома. За ней — тёмный проём. Подвал.'},
+    {type:'text',text:'Оттуда тянет холодом, сыростью и чем-то ещё. Землёй. Тайной.'},
+    {type:'text',text:'— Сюда никто не лазит. Труба лопнула, ЖЭС забил и забыл. А мы — нашли.',className:'dialogue'},
+    {type:'text',text:()=>hasItem('🔦 Фонарик')?'Ты достаёшь фонарик. Витёк присвистнул: — О, ты с понятием.':'Темно, хоть глаз выколи. Витёк чиркает спичкой — свет пляшет по стенам.',className:'dialogue'},
+    {type:'action',fn:()=>{if(hasItem('🔦 Фонарик')){state.banda.vitek++;}}},
+    {type:'action',fn:()=>{showChar('svetka','svetka_neutral','left');showChar('romka','romka_neutral','right');}},
+    {type:'text',text:'Из темноты — Светка и Ромка. Уже тут.'},
+    {type:'text',text:'— Ну как? — Витёк разводит руками, как хозяин дворца. — Наше место. Только наше.',className:'dialogue'},
+    {type:'text',text:'Пустой подвал. Трубы, паутина, старый хлам в углу. Пахнет плесенью.'},
+    {type:'text',text:'Но что-то в этом есть. Место, куда взрослым — нельзя. Своё.',className:'system'},
+    {type:'choices',choices:[
+        {text:'Тут можно сделать штаб!',action:()=>{state.splochennost+=2;updateUI();runScene(scenes.june2_idea);}},
+        {text:'Стрёмно тут как-то...',action:()=>runScene([
+            {type:'text',text:'— Да ладно тебе! — Ромка сам явно трусит, но храбрится за компанию.',className:'dialogue'},
+            {type:'text',text:'— Не, он прав, тут прибраться надо, — вступается Светка.',className:'dialogue'},
+            {type:'action',fn:()=>runScene(scenes.june2_idea)}
+        ])}
+    ]}
+];
+scenes.june2_idea=[
+    {type:'text',text:'— Штаб. — Витёк пробует слово на вкус. — Наш штаб. Точно!',className:'dialogue'},
+    {type:'text',text:'— Нужны стол, стулья, свет. И замок, чтоб чужие не лазили, — деловито считает Светка.',className:'dialogue'},
+    {type:'text',text:'— И еды! Штаб без запасов — не штаб! — Ромка о главном.',className:'dialogue'},
+    {type:'action',fn:()=>{state.shtab.stage=0;addNote('ШТАБ: нужны — мебель, свет, замок, припасы.');}},
+    {type:'text',text:'📓 В дневник: список для штаба.',className:'system'},
+    {type:'text',text:'— Значит так. С завтра — строим. Каждый тащит что может. — Витёк главный, и всем это норм.',className:'dialogue'},
+    {type:'action',fn:()=>{hideChar('vitek');hideChar('svetka');hideChar('romka');state.flags.shtab_founded=true;}},
+    {type:'text',text:'До вечера ещё далеко. Можно уже что-то начать.'},
+    {type:'hub'}
+];
+
+// ---------- ДЕНЬ 3 ----------
+scenes.june_day3=[
+    {type:'bg',bg:'yard_summer'},{type:'info',text:'3 чэрвеня · Серада'},
+    {type:'text',text:'Третий день лета. Уже есть куда бежать с утра. Уже есть — свои.'},
+    {type:'text',text:'Банда возится у подвала. Витёк приволок доски, Ромка — пакет с чем-то съестным.'},
+    {type:'action',fn:()=>{showChar('svetka','svetka_neutral','center');}},
+    {type:'text',text:'— О, пришёл. Хорошо. Одной рук не хватает. — Светка деловита.',className:'dialogue'},
+    {type:'text',text:'— Тащи что найдёшь. На помойке за гаражами всегда что-то есть.',className:'dialogue'},
+    {type:'action',fn:()=>{hideChar('svetka');}},
+    {type:'hub'}
+];
+
+// СТРОЙКА — с динамическим фоном по стадии
+scenes.build_shtab=[
+    {type:'bg',bg:()=>podvalBg()},
+    {type:'text',text:()=>{const s=state.shtab.stage;const t=['Расчищаешь хлам. Пыль столбом, чихаешь. Но угол уже — чище.','Тащишь ящики, ставишь как стол и стулья. Уже похоже на комнату.','Прибиваешь доски, вешаешь старый ковёр на стену. Уютнее.'];return t[Math.min(s,t.length-1)];}},
+    {type:'action',fn:()=>{state.shtab.stage++;state.splochennost++;updateUI();addNote('ШТАБ: стало лучше (стадия '+state.shtab.stage+').');}},
+    {type:'bg',bg:()=>podvalBg()},
+    {type:'text',text:'✓ Штаб преображается.',className:'system'},
+    {type:'text',text:()=>state.shtab.stage>=2?'Ромка притащил лимонад, разлил по банкам. — За штаб! — Чокаетесь.':'Витёк оглядывает работу, кивает. — Пойдёт. Дальше продолжим.'}
+];
+
+scenes.pomoyka=[
+    {type:'bg',bg:'garages'},
+    {type:'text',text:'Помойка за гаражами. Клондайк для того, кто умеет искать.'},
+    {type:'action',fn:()=>{
+        const finds=[
+            {item:'🪑 Старое кресло',msg:'Кресло! Продавленное, но с ним штаб — почти дом.',st:'mebel'},
+            {item:'💡 Лампочка',msg:'Целая лампочка. Если провести свет — цены ей нет.',st:'svet'},
+            {item:'🔩 Гвозди и петля',msg:'Ржавые гвозди и дверная петля. Для замка сгодится.',st:'dver'}
+        ];
+        const avail=finds.filter(f=>!state.shtab[f.st]);
+        if(avail.length===0){state._lastFind=null;return;}
+        const f=avail[Math.floor(Math.random()*avail.length)];
+        state._lastFind=f;addItem(f.item);state.shtab[f.st]=true;
+    }},
+    {type:'text',text:()=>state._lastFind?state._lastFind.msg:'Всё стоящее ты уже растащил. Остался только хлам.'},
+    {type:'text',text:()=>state._lastFind?('🎒 '+state._lastFind.item):'—',className:'system'}
+];
+scenes.stashit_edu=[
+    {type:'bg',bg:'room_boxes'},
+    {type:'text',text:'Дома тихо. Холодильник. Печенье, полбатона, банка сгущёнки.'},
+    {type:'choices',choices:[
+        {text:'Взять для штаба',action:()=>runScene([
+            {type:'text',text:'Суёшь в пакет. Сердце колотится — вдруг мама заметит.'},
+            {type:'action',fn:()=>{addItem('🍬 Припасы');state.shtab.pripasy=true;}},
+            {type:'text',text:'🎒 Припасы для штаба.',className:'system'},
+            {type:'text',text:'Пронесло. В штабе будет что пожевать. Ромка обрадуется.'}
+        ])},
+        {text:'Не, спалюсь',action:()=>runScene([{type:'text',text:'Закрываешь холодильник. Не сегодня. Мама и так на нервах после переезда.'}])}
+    ]}
+];
+
+// ---------- ДЕНЬ 4 ----------
+scenes.june_day4=[
+    {type:'bg',bg:'podval_shtab'},{type:'info',text:'4 чэрвеня · Чацвер'},
+    {type:'text',text:'Штаб. Уже — штаб, а не просто подвал. Ящики-стол, кресло, ковёр на стене.'},
+    {type:'text',text:'Свет фонарика. Тени. Пахнет лимонадом и приключением.'},
+    {type:'action',fn:()=>{showChar('vitek','vitek_serious','left');showChar('svetka','svetka_neutral','center');showChar('romka','romka_neutral','right');}},
+    {type:'text',text:'— Так. Раз есть штаб — нужна клятва. Как положено, — торжественно объявляет Витёк.',className:'dialogue'},
+    {type:'text',text:'Малой протискивается вперёд, глаза горят.'},
+    {type:'action',fn:()=>{hideChar('romka');showChar('maloy','maloy_neutral','right');}},
+    {type:'text',text:'— Клятва! Клятва! Я первый!',className:'dialogue'},
+    {type:'text',text:'— Кладём руки в круг. Повторяй: штаб — наш. Свои — не бросаем. Тайны — не выдаём.',className:'dialogue'},
+    {type:'choices',choices:[
+        {text:'(Положить руку) Свои — не бросаем.',action:()=>{state.splochennost+=3;state.flags.klyatva=true;updateUI();runScene(scenes.june4_after_klyatva);}},
+        {text:'А если что серьёзное будет?',action:()=>runScene([
+            {type:'text',text:'Витёк смотрит серьёзно, не по-детски.'},
+            {type:'text',text:'— Тем более. Клятва для серьёзного и есть. Для лёгкого клятва не нужна.',className:'dialogue'},
+            {type:'text',text:'Слова простые. Но что-то в них — настоящее.',className:'system'},
+            {type:'action',fn:()=>{state.splochennost+=3;state.flags.klyatva=true;state.banda.vitek++;updateUI();}},
+            {type:'action',fn:()=>runScene(scenes.june4_after_klyatva)}
+        ])}
+    ]}
+];
+scenes.june4_after_klyatva=[
+    {type:'text',text:'Руки в круге. Пять ладоней. Тихо. Даже Малой не дурачится.'},
+    {type:'text',text:'— Всё. Теперь мы — банда. По-настоящему, — выдыхает Витёк.',className:'dialogue'},
+    {type:'action',fn:()=>{hideChar('vitek');hideChar('svetka');hideChar('maloy');state.flags.day4_klyatva=true;}},
+    {type:'text',text:'...Эту клятву я помню до сих пор. Слово в слово. Хотя забыл, кажется, всё остальное.',className:'dialogue'},
+    {type:'text',text:'Расходитесь под вечер. Припасы — Ромкин лимонад, печенье, сгущёнку — оставляете в штабе.'},
+    {type:'text',text:'— Пусть тут будет. Наш склад. Завтра доедим, — говорит Ромка, запирая решётку.',className:'dialogue'},
+    {type:'action',fn:()=>{state.shtab.sklad=true;}},
+    {type:'text',text:'Первый штаб. Первая клятва. Кажется, это лето будет лучшим.'},
+    {type:'action',fn:()=>{state.flags.day4_done=true;advanceTime();}}
+];
+scenes.june4_evening=[
+    {type:'transition'},{type:'bg',bg:'room_boxes'},{type:'info',text:'4 чэрвеня · Вечар'},
+    {type:'text',text:'Дома. Ужин, телевизор, мамино «как погулял?». Обычный вечер.'},
+    {type:'text',text:'Уже засыпая, ловишь странную мысль.'},
+    {type:'text',text:'Печенье. Сгущёнка. Лимонад. Вы оставили их в штабе. За решёткой. На замке.'},
+    {type:'text',text:'Куда никто не лазит. Кроме вас пятерых.',className:'system'},
+    {type:'text',text:'...ай, ерунда. Устал просто. Спать.'},
+    {type:'action',fn:()=>{state.flags.seed_U1=true;}},
+    {type:'text',text:'Засыпаешь. Первое лето на новом месте. Завтра — снова в штаб.'},
+    {type:'action',fn:()=>{endDay();}}
+];
+
+scenes.to_be_continued=[
+    {type:'transition'},{type:'bg',bg:'room_boxes'},
+    {type:'text',text:'...'},
+    {type:'text',text:'Конец четвёртого дня.'},
+    {type:'text',text:'Продолжение следует.',className:'system'},
+    {type:'text',text:'(Дальше игра ещё не написана.)',className:'system'}
+];
+
+// ============ КНИГА ============
+function openBook(){state.flags._newNote=false;updateUI();document.getElementById('book-overlay').classList.add('active');openBookScreenRaw('book-home-screen');}
+function closeBook(){document.getElementById('book-overlay').classList.remove('active');}
+function bookBack(){openBookScreenRaw('book-home-screen');}
+function openBookScreenRaw(id){document.querySelectorAll('.book-screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');}
+function openBookScreen(what){
+    if(what==='dnevnik'){renderDnevnik();openBookScreenRaw('dnevnik-screen');}
+    else if(what==='karta'){renderKarta();openBookScreenRaw('karta-screen');}
+    else if(what==='sokrov'){renderSokrov();openBookScreenRaw('sokrov-screen');}
+    else if(what==='klyatva'){renderKlyatva();openBookScreenRaw('klyatva-screen');}
+}
+function renderDnevnik(){
+    const b=document.getElementById('dnevnik-body');b.innerHTML='';
+    if(!state.dnevnik.length){b.innerHTML='<div class="dnevnik-item">Пока пусто...</div>';return;}
+    state.dnevnik.forEach(n=>{const d=document.createElement('div');d.className='dnevnik-item'+(n.t==='ulika'?' ulika':'');d.textContent=(n.t==='ulika'?'🔍 ':'• ')+n.text;b.appendChild(d);});
+}
+function renderKarta(){
+    const b=document.getElementById('karta-body');b.innerHTML='';
+    const locs=[{k:'podval',icon:'🕳️',name:'Подвал',desc:'Наш штаб'},{k:'laz',icon:'🧱',name:'Заложенный лаз',desc:'Что за ним?'},{k:'cherdak',icon:'🏚️',name:'Чердак',desc:'Ещё не были'},{k:'zabroshka',icon:'🚪',name:'Квартира №1',desc:'Заколочена'}];
+    locs.forEach(l=>{const open=state.karta[l.k];const d=document.createElement('div');d.className='karta-loc'+(open?'':' locked');d.innerHTML=`<span class="karta-icon">${open?l.icon:'🔒'}</span><div><div class="karta-name">${open?l.name:'???'}</div><div class="karta-desc">${open?l.desc:'Не открыто'}</div></div>`;b.appendChild(d);});
+}
+function renderSokrov(){
+    const b=document.getElementById('sokrov-body');b.innerHTML='';
+    if(!state.inventory.length){b.innerHTML='<div class="dnevnik-item">Ничего не нашли...</div>';return;}
+    state.inventory.forEach(i=>{const d=document.createElement('div');d.className='dnevnik-item';d.textContent=i;b.appendChild(d);});
+}
+function renderKlyatva(){
+    const b=document.getElementById('klyatva-body');b.innerHTML='';
+    if(!state.flags.klyatva){b.innerHTML='<div class="dnevnik-item">Клятвы ещё нет.</div>';return;}
+    b.innerHTML='<div class="klyatva-box">Штаб — наш.<br>Свои — не бросаем.<br>Тайны — не выдаём.<br><br>✋ Клятва банды</div>';
+}
+
+// ============ ПАНЕЛИ ============
+function showPanel(type){
+    const o=document.getElementById('panel-overlay'),c=document.getElementById('panel-content');o.classList.add('active');let h='';
+    if(type==='banda'){
+        h='<h2>Банда</h2>';
+        if(!state.banda_met){h+='<div class="panel-item">Ты ещё ни с кем не познакомился.</div>';}
+        else{
+            const members=[{k:'vitek',n:'Витёк',d:'вожак, 13'},{k:'svetka',n:'Светка',d:'мозг банды, 12'},{k:'romka',n:'Ромка',d:'трусоват, но свой, 11'},{k:'maloy',n:'Малой (Сеня)',d:'хвостик, 8'}];
+            members.forEach(m=>{const t=Math.max(0,Math.min(5,state.banda[m.k]));h+=`<div class="panel-item"><div class="label">${'●'.repeat(t)}${'○'.repeat(5-t)}</div>${m.n} — ${m.d}</div>`;});
+            h+=`<div class="panel-item"><div class="label">Сплочённость штаба</div><div class="progress-bar"><div class="progress-fill" style="width:${Math.min(100,state.splochennost*10)}%"></div></div></div>`;
+        }
+    }
+    else if(type==='shtab'){
+        h='<h2>Штаб</h2>';
+        if(!state.flags.shtab_founded){h+='<div class="panel-item">Штаба ещё нет.</div>';}
+        else{
+            const names=['Пустой подвал','Расчищен','Обставлен','Уютный'];
+            h+=`<div class="panel-item"><div class="label">Состояние</div>${names[Math.min(state.shtab.stage,names.length-1)]}<div class="progress-bar"><div class="progress-fill" style="width:${Math.min(100,Math.round(state.shtab.stage/3*100))}%"></div></div></div>`;
+            h+=`<div class="panel-item"><div class="label">Свет</div>${state.shtab.svet?'✓ есть':'нет'}</div>`;
+            h+=`<div class="panel-item"><div class="label">Мебель</div>${state.shtab.mebel?'✓ есть':'нет'}</div>`;
+            h+=`<div class="panel-item"><div class="label">Дверь/замок</div>${state.shtab.dver?'✓ есть':'нет'}</div>`;
+            h+=`<div class="panel-item"><div class="label">Припасы</div>${state.shtab.pripasy?'✓ есть':'нет'}</div>`;
+        }
+    }
+    c.innerHTML=h;
+}
+function closePanel(){document.getElementById('panel-overlay').classList.remove('active');}
+
+// ============ INPUT ============
+document.addEventListener('keydown',e=>{
+    if(e.code==='Space'||e.code==='Enter'){e.preventDefault();if(document.getElementById('continue-btn').classList.contains('visible'))advance();}
+    if(e.code==='ArrowRight'&&document.getElementById('action-menu').classList.contains('visible'))carouselNext();
+    if(e.code==='ArrowLeft'&&document.getElementById('action-menu').classList.contains('visible'))carouselPrev();
+});
+
+// ============ START ============
+window.onload=()=>{updateUI();runScene(scenes.june_day1);};
+</script>
+</body>
+</html>
